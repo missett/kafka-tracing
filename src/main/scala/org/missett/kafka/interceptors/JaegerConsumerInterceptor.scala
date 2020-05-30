@@ -50,7 +50,7 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
       val offset = record.offset()
       val partition = record.partition()
 
-      val span = tracer.buildSpan("operation-name").withTag("offset", offset).withTag("partition", partition).start()
+      val span = tracer.buildSpan("consume-and-commit").withTag("offset", offset).withTag("partition", partition).start()
 
       tracer.activateSpan(span)
     }
