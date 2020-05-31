@@ -1,4 +1,4 @@
-package org.missett.kafka.interceptors
+package org.missett.kafka.interceptors.jaeger
 
 import java.util
 
@@ -11,5 +11,7 @@ class JaegerProducerInterceptor extends ProducerInterceptor[Array[Byte], Array[B
 
   override def close(): Unit = ???
 
-  override def configure(configs: util.Map[String, _]): Unit = ???
+  override def configure(configs: util.Map[String, _]): Unit = {
+
+  }
 }

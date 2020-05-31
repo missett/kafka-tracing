@@ -1,23 +1,13 @@
-package org.missett.kafka.interceptors
-
-import java.nio.charset.StandardCharsets
-import java.util
-import java.util.Map
+package org.missett.kafka.interceptors.jaeger
 
 import com.typesafe.config.ConfigFactory
 import io.jaegertracing.Configuration
 import io.jaegertracing.Configuration.{ReporterConfiguration, SamplerConfiguration, SenderConfiguration}
-import io.jaegertracing.internal.{JaegerSpan, JaegerTracer}
-import io.opentracing.References
-import io.opentracing.propagation.{Format, TextMap}
-import org.apache.kafka.clients.consumer.{ConsumerInterceptor, ConsumerRecords, OffsetAndMetadata}
-import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.header.Headers
-import org.missett.kafka.interceptors.JaegerConsumerInterceptor.ConfigProps
+import io.jaegertracing.internal.JaegerTracer
 
 import scala.collection.JavaConverters._
 
-object JaegerConsumerInterceptor {
+object Config {
   object ConfigProps {
     // "servicename"
     val SERVICE_NAME = "jaeger.interceptor.service.name"
@@ -42,79 +32,13 @@ object JaegerConsumerInterceptor {
     // "hostname:8080"
     val SAMPLER_HOST_PORT = "jaeger.interceptor.sampler.hostport"
   }
-}
-
-// Encodes and decodes a Jaeger context into kafka record headers
-class ContextHeaderEncoder(headers: Headers) extends TextMap {
-  override def put(key: String, value: String): Unit = {
-    headers.add(key, value.getBytes(StandardCharsets.UTF_8))
-    ()
-  }
-
-  override def iterator(): util.Iterator[Map.Entry[String, String]] = {
-    headers.iterator().asScala.map(header => new util.AbstractMap.SimpleEntry[String, String](
-      header.key(),
-      new String(header.value())
-    ).asInstanceOf[Map.Entry[String, String]]).asJava
-  }
-}
-
-class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[Byte]] {
-  var tracer: JaegerTracer = _
-
-  val spans = scala.collection.mutable.Map.empty[String, JaegerSpan]
-
-  private def getSpanKey(topic: String, partition: Int, offset: Long) = s"$topic-$partition-$offset"
-
-  override def onConsume(records: ConsumerRecords[Array[Byte], Array[Byte]]): ConsumerRecords[Array[Byte], Array[Byte]] = {
-    val it = records.iterator()
-
-    while(it.hasNext) {
-      val record = it.next()
-      val offset = record.offset()
-      val partition = record.partition()
-      val topic = record.topic()
-
-      val builder = tracer.buildSpan("consume-and-commit")
-        .withTag("offset", offset)
-        .withTag("partition", partition)
-        .withTag("topic", topic)
-
-      val context = tracer.extract(Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(record.headers()))
-
-      if (context != null) {
-        builder.addReference(References.FOLLOWS_FROM, context)
-      }
-
-      val span = builder.start()
-
-      spans.put(getSpanKey(topic, partition, offset), span)
-    }
-
-    records
-  }
-
-  override def onCommit(offsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit = {
-    offsets.asScala.foreach { case (tp, om) =>
-      val key = getSpanKey(tp.topic(), tp.partition(), om.offset())
-
-      spans.get(key).foreach(span => {
-        span.finish()
-        spans.remove(key)
-      })
-    }
-  }
-
-  override def close(): Unit = {
-    tracer.close()
-  }
 
   // We go slightly out of our way to configure a tracer object like this because we want to be able to pass
   // our Jaeger config in to the kafka interceptor configs rather than using environment variables (the kafka
   // configs will be configurable via environment variables anyway).
 
-  override def configure(cfg: util.Map[String, _]): Unit = {
-    val kafkaConfigValues = ConfigFactory.parseMap(cfg)
+  def fromConf(config: java.util.Map[String, _]): JaegerTracer = {
+    val kafkaConfigValues = ConfigFactory.parseMap(config)
 
     val service = kafkaConfigValues.getString(ConfigProps.SERVICE_NAME)
 
@@ -156,11 +80,11 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
 
     val tracerConfig = new Configuration(service)
       .withTracerTags(tags)
-        .withTraceId128Bit(use128BitTraceId)
-        .withReporter(reporter)
-        .withSampler(sampler)
-        .withCodec(null)
+      .withTraceId128Bit(use128BitTraceId)
+      .withReporter(reporter)
+      .withSampler(sampler)
+      .withCodec(null)
 
-    tracer = tracerConfig.getTracer
+    tracerConfig.getTracer
   }
 }
