@@ -5,6 +5,8 @@ import java.util
 import io.jaegertracing.internal.JaegerTracer
 import io.jaegertracing.internal.reporters.InMemoryReporter
 import io.jaegertracing.internal.samplers.ConstSampler
+import io.opentracing.References
+import io.opentracing.propagation.Format
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, OffsetAndMetadata}
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.Serde
@@ -60,6 +62,31 @@ trait JaegerConsumerInterceptorTesting {
 }
 
 class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
+  behavior of "ContextHeaderEncoder"
+
+  it should "return null when given some empty headers" in new JaegerConsumerInterceptorTesting {
+    val rec = record(key = 1, value = "one")
+    val coder = new ContextHeaderEncoder(rec.headers())
+    val (_, _, tracer) = getTestComponents
+
+    val result = tracer.extract(Format.Builtin.TEXT_MAP, coder)
+
+    result should equal (null)
+  }
+
+  it should "return null when given some headers containing data not related to Jaeger tracing" in new JaegerConsumerInterceptorTesting {
+    val rec = record(key = 1, value = "one")
+    rec.headers().add("foo", "bar".getBytes)
+    val coder = new ContextHeaderEncoder(rec.headers())
+    val (_, _, tracer) = getTestComponents
+
+    val result = tracer.extract(Format.Builtin.TEXT_MAP, coder)
+
+    result should equal (null)
+  }
+
+  behavior of "JaegerConsumerInterceptor"
+
   it should "set all config values" in {
     val int = new JaegerConsumerInterceptor()
 
@@ -85,7 +112,7 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     int.tracer.tags().get("c") should equal ("baz")
   }
 
-  it should "report a span correctly when a message is conumed and the offset is committed" in new JaegerConsumerInterceptorTesting {
+  it should "report a span correctly when a message is consumed and the offset is committed" in new JaegerConsumerInterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerConsumerInterceptor
@@ -115,8 +142,10 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
 
-    consume[Int, String](one, int)
-    consume[Int, String](two, int)
+    consume(one, int)
+    consume(two, int)
+
+    int.spans.size should equal (2)
 
     commit(int, one.topic(), one.partition(), one.offset())
     commit(int, two.topic(), two.partition(), two.offset())
@@ -124,6 +153,8 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val spans = reporter.getSpans
 
     spans.size() should equal (2)
+
+    int.spans.size should equal (0)
   }
 
   it should "track multiple spans being active at the same time for the same offset on many partitions" in new JaegerConsumerInterceptorTesting {
@@ -137,10 +168,12 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
 
-    consume[Int, String](one, int)
-    consume[Int, String](two, int)
-    consume[Int, String](three, int)
-    consume[Int, String](four, int)
+    consume(one, int)
+    consume(two, int)
+    consume(three, int)
+    consume(four, int)
+
+    int.spans.size should equal (4)
 
     commit(int, one.topic(), one.partition(), one.offset())
     commit(int, two.topic(), two.partition(), two.offset())
@@ -150,6 +183,8 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val spans = reporter.getSpans
 
     spans.size() should equal (4)
+
+    int.spans.size should equal (0)
   }
 
   it should "track multiple spans being active at the same time for the same offset on the same partition on many topics" in new JaegerConsumerInterceptorTesting {
@@ -163,10 +198,12 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
 
-    consume[Int, String](one, int)
-    consume[Int, String](two, int)
-    consume[Int, String](three, int)
-    consume[Int, String](four, int)
+    consume(one, int)
+    consume(two, int)
+    consume(three, int)
+    consume(four, int)
+
+    int.spans.size should equal (4)
 
     commit(int, one.topic(), one.partition(), one.offset())
     commit(int, two.topic(), two.partition(), two.offset())
@@ -176,19 +213,36 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val spans = reporter.getSpans
 
     spans.size() should equal (4)
+
+    int.spans.size should equal (0)
   }
 
-//  it should "continue a trace that is received in the message headers" in new JaegerConsumerInterceptorTesting {
-//    val (_, _, tracer) = getTestComponents
-//
-//    val int = new JaegerConsumerInterceptor
-//    int.tracer = tracer
-//
-//
-//    val rec = record(key = 1, value = 2)
-//
-//    val context = tracer.extract(Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(rec.headers()))
-//
-//    tracer.inject(tracer.activeSpan().context(), Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(rec.headers()))
-//  }
+  it should "continue a trace that is received in the message headers" in new JaegerConsumerInterceptorTesting {
+    val (reporter, _, tracer) = getTestComponents
+
+    val int = new JaegerConsumerInterceptor
+    int.tracer = tracer
+
+    val rec = record(key = 1, value = "one")
+
+    val parentSpan = tracer.buildSpan("parent-operation").start()
+    val parentContext = parentSpan.context()
+
+    tracer.inject(parentContext, Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(rec.headers()))
+
+    consume(rec, int)
+    commit(int)
+
+    val spans = reporter.getSpans
+    spans.size() should equal (1)
+
+    val span = spans.get(0)
+
+    val refs = span.getReferences
+    refs.size() should equal (1)
+
+    val ref = refs.get(0)
+    ref.getType should equal (References.FOLLOWS_FROM)
+    ref.getSpanContext.getSpanId should equal (parentContext.getSpanId)
+  }
 }
