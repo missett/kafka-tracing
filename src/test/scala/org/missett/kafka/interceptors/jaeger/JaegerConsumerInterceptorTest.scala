@@ -125,7 +125,7 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
 
     tracer.inject(parentContext, Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(rec.headers()))
 
-    consume(rec, int)
+    val consumed = consume(rec, int)
     commit(int)
 
     val spans = reporter.getSpans
@@ -139,5 +139,8 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val ref = refs.get(0)
     ref.getType should equal (References.FOLLOWS_FROM)
     ref.getSpanContext.getSpanId should equal (parentContext.getSpanId)
+
+    val newContext = tracer.extract(Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(consumed.headers()))
+    newContext.getParentId should equal (parentContext.getSpanId)
   }
 }

@@ -31,6 +31,8 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
         .withTag("partition", partition)
         .withTag("topic", topic)
 
+      // Extract any existing tracing context from the inbound message and attach a reference to the current (new) span
+
       val context = tracer.extract(Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(record.headers()))
 
       if (context != null) {
@@ -38,6 +40,10 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
       }
 
       val span = builder.start()
+
+      // Inject the current tracing context into the record headers (over the top of any existing tracing context)
+
+      tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(record.headers()))
 
       spans.put(getSpanKey(topic, partition, offset), span)
     }
