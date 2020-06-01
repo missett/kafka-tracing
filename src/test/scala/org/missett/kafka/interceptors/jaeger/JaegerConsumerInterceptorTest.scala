@@ -13,9 +13,9 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
 
-    val rec = record(key = 1, value = 2)
+    val rec = cRecord(key = 1, value = 2)
 
-    consume[Int, Int](rec, int)
+    consume(rec, int)
     commit(int)
 
     val span = reporter.getSpans.get(0)
@@ -31,8 +31,8 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
   it should "track multiple spans being active at the same time on the same partition" in new JaegerInterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
-    val one = record(key = 1, value = "one", partition = 1, offset = 1)
-    val two = record(key = 2, value = "two", partition = 1, offset = 2)
+    val one = cRecord(key = 1, value = "one", partition = 1, offset = 1)
+    val two = cRecord(key = 2, value = "two", partition = 1, offset = 2)
 
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
@@ -55,10 +55,10 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
   it should "track multiple spans being active at the same time for the same offset on many partitions" in new JaegerInterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
-    val one = record(key = 1, value = "one", partition = 1, offset = 1)
-    val two = record(key = 2, value = "two", partition = 2, offset = 1)
-    val three = record(key = 3, value = "three", partition = 3, offset = 1)
-    val four = record(key = 4, value = "four", partition = 4, offset = 1)
+    val one = cRecord(key = 1, value = "one", partition = 1, offset = 1)
+    val two = cRecord(key = 2, value = "two", partition = 2, offset = 1)
+    val three = cRecord(key = 3, value = "three", partition = 3, offset = 1)
+    val four = cRecord(key = 4, value = "four", partition = 4, offset = 1)
 
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
@@ -85,10 +85,10 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
   it should "track multiple spans being active at the same time for the same offset on the same partition on many topics" in new JaegerInterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
-    val one = record(key = 1, value = "one", partition = 1, offset = 1, topic = "one")
-    val two = record(key = 2, value = "two", partition = 1, offset = 1, topic = "two")
-    val three = record(key = 3, value = "three", partition = 1, offset = 1, topic = "three")
-    val four = record(key = 4, value = "four", partition = 1, offset = 1, topic = "four")
+    val one = cRecord(key = 1, value = "one", partition = 1, offset = 1, topic = "one")
+    val two = cRecord(key = 2, value = "two", partition = 1, offset = 1, topic = "two")
+    val three = cRecord(key = 3, value = "three", partition = 1, offset = 1, topic = "three")
+    val four = cRecord(key = 4, value = "four", partition = 1, offset = 1, topic = "four")
 
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
@@ -118,7 +118,7 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val int = new JaegerConsumerInterceptor
     int.tracer = tracer
 
-    val rec = record(key = 1, value = "one")
+    val rec = cRecord(key = 1, value = "one")
 
     val parentSpan = tracer.buildSpan("parent-operation").start()
     val parentContext = parentSpan.context()

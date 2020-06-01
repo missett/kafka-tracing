@@ -6,6 +6,7 @@ import io.jaegertracing.internal.JaegerTracer
 import io.jaegertracing.internal.reporters.InMemoryReporter
 import io.jaegertracing.internal.samplers.ConstSampler
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, OffsetAndMetadata}
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.scala.Serdes
@@ -22,7 +23,7 @@ trait JaegerInterceptorTesting {
   implicit val IntSerde: Serde[Int] = Serdes.Integer
   implicit val StringSerde: Serde[String] = Serdes.String
 
-  def record[K, V](key: K, value: V, partition: Int = 0, offset: Long = 0, topic: String = topic)(implicit keyser: Serde[K], valser: Serde[V]): ConsumerRecord[Bytes, Bytes] = {
+  def cRecord[K, V](key: K, value: V, partition: Int = 0, offset: Long = 0, topic: String = topic)(implicit keyser: Serde[K], valser: Serde[V]): ConsumerRecord[Bytes, Bytes] = {
     val k = keyser.serializer().serialize(topic, key)
     val v = valser.serializer().serialize(topic, value)
     new ConsumerRecord[Bytes, Bytes](topic, partition, offset, k, v)
@@ -46,6 +47,16 @@ trait JaegerInterceptorTesting {
     interceptor.onCommit(offsets)
 
     topicpartition
+  }
+
+  def pRecord[K, V](key: K, value: V, topic: String = topic)(implicit keyser: Serde[K], valser: Serde[V]): ProducerRecord[Bytes, Bytes] = {
+    val k = keyser.serializer().serialize(topic, key)
+    val v = valser.serializer().serialize(topic, value)
+    new ProducerRecord[Bytes, Bytes](topic, k, v)
+  }
+
+  def send(interceptor: JaegerProducerInterceptor, record: ProducerRecord[Bytes, Bytes]): ProducerRecord[Array[Byte], Array[Byte]] = {
+    interceptor.onSend(record)
   }
 
   def getTestComponents: (InMemoryReporter, ConstSampler, JaegerTracer) = {
