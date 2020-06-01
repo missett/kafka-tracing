@@ -51,7 +51,10 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
 
   override def onCommit(offsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit = {
     offsets.asScala.foreach { case (tp, om) =>
-      val key = getSpanKey(tp.topic(), tp.partition(), om.offset())
+      // The offsets returned here are the new offsets for the consumer after processing the
+      // message, so to find the offset of the original message that started the trace we subtract one
+
+      val key = getSpanKey(tp.topic(), tp.partition(), om.offset() - 1)
 
       spans.get(key).foreach(span => {
         span.finish()

@@ -1,5 +1,7 @@
 package org.missett.kafka.interceptors.jaeger
 
+import java.util
+
 import com.typesafe.config.ConfigFactory
 import io.jaegertracing.Configuration
 import io.jaegertracing.Configuration.{ReporterConfiguration, SamplerConfiguration, SenderConfiguration}
@@ -31,6 +33,14 @@ object Config {
     val SAMPLER_PARAM = "jaeger.interceptor.sampler.param"
     // "hostname:8080"
     val SAMPLER_HOST_PORT = "jaeger.interceptor.sampler.hostport"
+
+    def all: List[String] = List(
+      SERVICE_NAME, TRACER_TAGS, REPORTER_LOG_SPANS, REPORTER_FLUSH_INTERVAL, REPORTER_MAX_QUEUE_SIZE,
+      SENDER_HOST, SENDER_PORT, SENDER_ENDPOINT, SAMPLER_TYPE, SAMPLER_PARAM, SAMPLER_HOST_PORT,
+    )
+
+    def extractJaegerPropsFromKafkaProps(config: java.util.Map[String, _]): util.Map[String, _] =
+      config.asScala.filter { case (key, _) => ConfigProps.all.contains(key) }.asJava
   }
 
   // We go slightly out of our way to configure a tracer object like this because we want to be able to pass
@@ -38,7 +48,7 @@ object Config {
   // configs will be configurable via environment variables anyway).
 
   def fromConf(config: java.util.Map[String, _]): JaegerTracer = {
-    val kafkaConfigValues = ConfigFactory.parseMap(config)
+    val kafkaConfigValues = ConfigFactory.parseMap(ConfigProps.extractJaegerPropsFromKafkaProps(config))
 
     val service = kafkaConfigValues.getString(ConfigProps.SERVICE_NAME)
 
