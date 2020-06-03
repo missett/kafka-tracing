@@ -2,20 +2,14 @@ package org.missett.kafka.interceptors.jaeger
 
 import java.util
 
-import io.jaegertracing.internal.{JaegerSpan, JaegerTracer}
+import io.jaegertracing.internal.JaegerTracer
 import io.opentracing.References
 import io.opentracing.propagation.Format
 import org.apache.kafka.clients.consumer.{ConsumerInterceptor, ConsumerRecords, OffsetAndMetadata}
 import org.apache.kafka.common.TopicPartition
 
-import scala.collection.JavaConverters._
-
 class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[Byte]] {
   var tracer: JaegerTracer = _
-
-  val spans = scala.collection.mutable.Map.empty[String, JaegerSpan]
-
-  private def getSpanKey(topic: String, partition: Int, offset: Long) = s"$topic-$partition-$offset"
 
   override def onConsume(records: ConsumerRecords[Array[Byte], Array[Byte]]): ConsumerRecords[Array[Byte], Array[Byte]] = {
     val it = records.iterator()
@@ -26,7 +20,7 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
       val partition = record.partition()
       val topic = record.topic()
 
-      val builder = tracer.buildSpan("consume-and-commit")
+      val builder = tracer.buildSpan("consume")
         .withTag("offset", offset)
         .withTag("partition", partition)
         .withTag("topic", topic)
@@ -43,25 +37,18 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
       // Inject the current tracing context into the record headers (over the top of any existing tracing context)
       tracer.inject(span.context(), Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(record.headers()))
 
-      spans.put(getSpanKey(topic, partition, offset), span)
+      span.finish()
     }
 
     records
   }
 
-  override def onCommit(offsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit = {
-    offsets.asScala.foreach { case (tp, om) =>
-      // The offsets returned here are the new offsets for the consumer after processing the
-      // message, so to find the offset of the original message that started the trace we subtract one
+  // Ideally we would start the trace in the onConsume callback and finish it in here but the onCommit
+  // callback seems really flakey. It seems to only be called for some offsets and not at all for others
+  // and I can't work out why right now.
+  override def onCommit(offsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit = (
 
-      val key = getSpanKey(tp.topic(), tp.partition(), om.offset() - 1)
-
-      spans.get(key).foreach(span => {
-        span.finish()
-        spans.remove(key)
-      })
-    }
-  }
+  )
 
   override def close(): Unit = {
     tracer.close()

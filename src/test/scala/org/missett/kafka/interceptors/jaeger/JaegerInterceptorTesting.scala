@@ -39,14 +39,16 @@ trait JaegerInterceptorTesting {
     record
   }
 
-  def commit(interceptor: JaegerConsumerInterceptor, topic: String = topic, partition: Int = 0, offset: Long = 0): TopicPartition = {
+  def commit(record: ConsumerRecord[Bytes, Bytes], interceptor: JaegerConsumerInterceptor): TopicPartition = {
     val offsets = new util.HashMap[TopicPartition, OffsetAndMetadata]()
-    val topicpartition = new TopicPartition(topic, partition)
-    offsets.put(topicpartition, new OffsetAndMetadata(offset, "<none>"))
+    val tp = new TopicPartition(record.topic(), record.partition())
+    // The client receives a message at offset N and then when the client commits its offset
+    // it should get back that offset incremented by one, so we +1 here to simulate that behavior
+    offsets.put(tp, new OffsetAndMetadata(record.offset() + 1))
 
     interceptor.onCommit(offsets)
 
-    topicpartition
+    tp
   }
 
   def pRecord[K, V](key: K, value: V, topic: String = topic)(implicit keyser: Serde[K], valser: Serde[V]): ProducerRecord[Bytes, Bytes] = {

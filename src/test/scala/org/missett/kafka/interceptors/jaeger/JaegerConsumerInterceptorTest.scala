@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
   behavior of "JaegerConsumerInterceptor"
 
-  it should "report a span correctly when a message is consumed and the offset is committed" in new JaegerInterceptorTesting {
+  it should "report a span correctly when a message is consumed" in new JaegerInterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerConsumerInterceptor
@@ -16,100 +16,15 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     val rec = cRecord(key = 1, value = 2)
 
     consume(rec, int)
-    commit(int)
 
     val span = reporter.getSpans.get(0)
 
     span.getServiceName should equal (service)
-    span.getOperationName should equal ("consume-and-commit")
+    span.getOperationName should equal ("consume")
     span.getTags.get("partition") should equal (rec.partition())
     span.getTags.get("offset") should equal (rec.offset())
     span.getTags.get("topic") should equal (rec.topic())
     span.isFinished should equal (true)
-  }
-
-  it should "track multiple spans being active at the same time on the same partition" in new JaegerInterceptorTesting {
-    val (reporter, _, tracer) = getTestComponents
-
-    val one = cRecord(key = 1, value = "one", partition = 1, offset = 1)
-    val two = cRecord(key = 2, value = "two", partition = 1, offset = 2)
-
-    val int = new JaegerConsumerInterceptor
-    int.tracer = tracer
-
-    consume(one, int)
-    consume(two, int)
-
-    int.spans.size should equal (2)
-
-    commit(int, one.topic(), one.partition(), one.offset())
-    commit(int, two.topic(), two.partition(), two.offset())
-
-    val spans = reporter.getSpans
-
-    spans.size() should equal (2)
-
-    int.spans.size should equal (0)
-  }
-
-  it should "track multiple spans being active at the same time for the same offset on many partitions" in new JaegerInterceptorTesting {
-    val (reporter, _, tracer) = getTestComponents
-
-    val one = cRecord(key = 1, value = "one", partition = 1, offset = 1)
-    val two = cRecord(key = 2, value = "two", partition = 2, offset = 1)
-    val three = cRecord(key = 3, value = "three", partition = 3, offset = 1)
-    val four = cRecord(key = 4, value = "four", partition = 4, offset = 1)
-
-    val int = new JaegerConsumerInterceptor
-    int.tracer = tracer
-
-    consume(one, int)
-    consume(two, int)
-    consume(three, int)
-    consume(four, int)
-
-    int.spans.size should equal (4)
-
-    commit(int, one.topic(), one.partition(), one.offset())
-    commit(int, two.topic(), two.partition(), two.offset())
-    commit(int, three.topic(), three.partition(), three.offset())
-    commit(int, four.topic(), four.partition(), four.offset())
-
-    val spans = reporter.getSpans
-
-    spans.size() should equal (4)
-
-    int.spans.size should equal (0)
-  }
-
-  it should "track multiple spans being active at the same time for the same offset on the same partition on many topics" in new JaegerInterceptorTesting {
-    val (reporter, _, tracer) = getTestComponents
-
-    val one = cRecord(key = 1, value = "one", partition = 1, offset = 1, topic = "one")
-    val two = cRecord(key = 2, value = "two", partition = 1, offset = 1, topic = "two")
-    val three = cRecord(key = 3, value = "three", partition = 1, offset = 1, topic = "three")
-    val four = cRecord(key = 4, value = "four", partition = 1, offset = 1, topic = "four")
-
-    val int = new JaegerConsumerInterceptor
-    int.tracer = tracer
-
-    consume(one, int)
-    consume(two, int)
-    consume(three, int)
-    consume(four, int)
-
-    int.spans.size should equal (4)
-
-    commit(int, one.topic(), one.partition(), one.offset())
-    commit(int, two.topic(), two.partition(), two.offset())
-    commit(int, three.topic(), three.partition(), three.offset())
-    commit(int, four.topic(), four.partition(), four.offset())
-
-    val spans = reporter.getSpans
-
-    spans.size() should equal (4)
-
-    int.spans.size should equal (0)
   }
 
   it should "continue a trace that is received in the message headers" in new JaegerInterceptorTesting {
@@ -126,7 +41,6 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
     tracer.inject(parentContext, Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(rec.headers()))
 
     val consumed = consume(rec, int)
-    commit(int)
 
     val spans = reporter.getSpans
     spans.size() should equal (1)

@@ -59,4 +59,32 @@ class JaegerProducerInterceptorTest extends FlatSpec with Matchers {
     val newContext = tracer.extract(Format.Builtin.TEXT_MAP, new ContextHeaderEncoder(rec.headers()))
     newContext.getParentId should equal (parentContext.getSpanId)
   }
+
+  it should "not create a span when topic ends with -changelog" in new JaegerInterceptorTesting {
+    val (reporter, _, tracer) = getTestComponents
+
+    val int = new JaegerProducerInterceptor
+    int.tracer = tracer
+
+    val rec = pRecord(key = "one", value = 1, topic = "test-changelog")
+
+    send(int, rec)
+
+    val spans = reporter.getSpans
+    spans.size() should equal (0)
+  }
+
+  it should "not create a span when topic ends with -repartition" in new JaegerInterceptorTesting {
+    val (reporter, _, tracer) = getTestComponents
+
+    val int = new JaegerProducerInterceptor
+    int.tracer = tracer
+
+    val rec = pRecord(key = "one", value = 1, topic = "test-repartition")
+
+    send(int, rec)
+
+    val spans = reporter.getSpans
+    spans.size() should equal (0)
+  }
 }
