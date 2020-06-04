@@ -20,6 +20,8 @@ val deps = Seq(
   "io.github.embeddedkafka" %% "embedded-kafka-streams" % kafkaVersion % Test,
   "org.apache.kafka" % "kafka-streams" % kafkaVersion % Test,
   "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion % Test,
+  "org.typelevel" %% "cats-effect" % "2.1.3" % Test,
+  "org.typelevel" %% "cats-core" % "2.0.0" % Test,
 )
   .map(_ exclude("javax.ws.rs", "javax.ws.rs-api"))
   .map(_ exclude("org.slf4j", "slf4j-log4j12"))
