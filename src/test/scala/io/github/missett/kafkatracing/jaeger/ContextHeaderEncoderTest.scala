@@ -1,4 +1,4 @@
-package org.missett.kafka.interceptors.jaeger
+package io.github.missett.kafkatracing.jaeger
 
 import io.opentracing.propagation.Format
 import org.scalatest.{FlatSpec, Matchers}

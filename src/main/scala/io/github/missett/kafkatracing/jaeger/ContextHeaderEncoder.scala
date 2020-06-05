@@ -1,4 +1,4 @@
-package org.missett.kafka.interceptors.jaeger
+package io.github.missett.kafkatracing.jaeger
 
 import java.nio.charset.StandardCharsets
 import java.util

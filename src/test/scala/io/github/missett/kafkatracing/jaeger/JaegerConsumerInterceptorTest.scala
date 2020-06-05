@@ -1,4 +1,4 @@
-package org.missett.kafka.interceptors.jaeger
+package io.github.missett.kafkatracing.jaeger
 
 import io.opentracing.References
 import io.opentracing.propagation.Format

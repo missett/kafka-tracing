@@ -1,4 +1,4 @@
-package org.missett.kafka.interceptors
+package io.github.missett.kafkatracing.jaeger
 
 import java.util.Properties
 import java.util.concurrent.Executors
@@ -6,13 +6,13 @@ import java.util.concurrent.Executors
 import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.typesafe.config.ConfigFactory
+import io.github.missett.kafkatracing.jaeger.Config.ConfigProps
 import net.manub.embeddedkafka.EmbeddedKafkaConfig
 import net.manub.embeddedkafka.streams.EmbeddedKafkaStreams
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.scala.kstream.{Consumed, Grouped, Materialized, Produced}
 import org.apache.kafka.streams.scala.{Serdes, StreamsBuilder}
 import org.apache.kafka.streams.state.Stores
-import org.missett.kafka.interceptors.jaeger.Config.ConfigProps
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.collection.JavaConverters._
@@ -98,14 +98,6 @@ class MeteredConsumerInterceptorTest extends FlatSpec with Matchers with Embedde
 
       threads.parSequence.unsafeRunSync()
     }
-
-//    val mbs = ManagementFactory.getPlatformMBeanServer
-//
-//    val queueTimeNanosCounterName = new ObjectName("org.missett.kafka.interceptors:type=QueueTimeNanosCounter,topic=input-topic,partition=0")
-//    mbs.getAttribute(queueTimeNanosCounterName, "QueueTimeNanos")
-//
-//    val messagesIngestedCounterName = new ObjectName("org.missett.kafka.interceptors:type=MessagesIngestedCounter,topic=input-topic,partition=0")
-//    mbs.getAttribute(messagesIngestedCounterName, "MessagesIngested")
   }
 
   it should "create a topology that links multiple spans together in a branching graph" in new TestTopology {

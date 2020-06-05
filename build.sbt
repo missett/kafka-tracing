@@ -1,8 +1,8 @@
 import ReleaseTransformations._
 
+organization := "io.github.missett"
 name := "kafka-tracing"
 scalaVersion := "2.12.11"
-organization := "org.missett.kafka"
 
 resolvers += "confluent" at "https://packages.confluent.io/maven/"
 
