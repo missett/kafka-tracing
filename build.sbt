@@ -1,14 +1,24 @@
-import ReleaseTransformations._
+//import ReleaseTransformations._
 
 organization := "io.github.missett"
 name := "kafka-tracing"
 scalaVersion := "2.12.11"
 
-resolvers += "confluent" at "https://packages.confluent.io/maven/"
+scmInfo := Some(
+  ScmInfo( url("https://github.com/missett/kafka-tracing"), "https://github.com/missett/kafka-tracing.git" )
+)
+
+developers := List(
+  Developer( id = "missett", name = "Ryan Missett", email = "nope@nope.com", url = url("https://nope.com") )
+)
+
+description := "Tools for tracing distributed kafka systems with Jaeger"
+licenses := List("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+homepage := Some(url("https://github.com/missett/kafka-tracing"))
 
 val kafkaVersion = "2.2.0"
 
-val deps = Seq(
+libraryDependencies ++= Seq(
   "org.apache.kafka" %% "kafka" % kafkaVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "io.jaegertracing" % "jaeger-client" % "1.2.0",
@@ -26,27 +36,34 @@ val deps = Seq(
   .map(_ exclude("javax.ws.rs", "javax.ws.rs-api"))
   .map(_ exclude("org.slf4j", "slf4j-log4j12"))
 
-libraryDependencies ++= deps
-
 scalacOptions ++= ScalaCOptions.opts
 
-assemblyMergeStrategy in assembly := {
-  case PathList("org", "slf4j", xs@_*) => MergeStrategy.first
-  case x =>
-    val oldStrategy = (assemblyMergeStrategy in assembly).value
-    oldStrategy(x)
+pomIncludeRepository := { _ => false }
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
+publishMavenStyle := true
 
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  publishArtifacts,
-  setNextVersion,
-  commitNextVersion
+credentials += Credentials(
+  "GnuPG Key ID",
+  "gpg",
+  "09897011459E84E59E67569CCAFCFC429E31D2A2",
+  "notused"
 )
 
+//Global / PgpKeys.gpgCommand := (baseDirectory.value / "gpg").getAbsolutePath
+
+//releaseProcess := Seq[ReleaseStep](
+//  checkSnapshotDependencies,
+//  inquireVersions,
+//  runClean,
+//  runTest,
+//  setReleaseVersion,
+//  commitReleaseVersion,
+//  tagRelease,
+//  publishArtifacts,
+//  setNextVersion,
+//  commitNextVersion
+//)
