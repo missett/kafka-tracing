@@ -2,9 +2,9 @@ name: Snapshot
 
 on:
   push:
-    branches: [ snapshots, ci-testing ]
+    branches: [ snapshot ]
   pull_request:
-    branches: [ snapshots, ci-testing ]
+    branches: [ snapshot ]
 
 jobs:
   test:
@@ -21,7 +21,7 @@ jobs:
 
   snapshot:
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [ test ]
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
