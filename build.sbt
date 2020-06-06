@@ -1,4 +1,4 @@
-//import ReleaseTransformations._
+import ReleaseTransformations._
 
 organization := "io.github.missett"
 name := "kafka-tracing"
@@ -53,17 +53,15 @@ credentials += Credentials(
   "notused"
 )
 
-//Global / PgpKeys.gpgCommand := (baseDirectory.value / "gpg").getAbsolutePath
-
-//releaseProcess := Seq[ReleaseStep](
-//  checkSnapshotDependencies,
-//  inquireVersions,
-//  runClean,
-//  runTest,
-//  setReleaseVersion,
-//  commitReleaseVersion,
-//  tagRelease,
-//  publishArtifacts,
-//  setNextVersion,
-//  commitNextVersion
-//)
+releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runClean,
+  runTest,
+  setReleaseVersion,
+  commitReleaseVersion,
+  tagRelease,
+  publishArtifacts,
+  setNextVersion,
+  commitNextVersion
+)
