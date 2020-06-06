@@ -1,5 +1,7 @@
 # kafka-tracing
 
+![Scala CI](https://github.com/missett/kafka-tracing/workflows/Scala%20CI/badge.svg)
+
 This project is an implementation of tooling to trace kafka messages flowing through distributed systems and report the
 traces to a Jaeger installation for later inspection.
 
