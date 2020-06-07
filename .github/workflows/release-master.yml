@@ -24,9 +24,6 @@ jobs:
 
   release-master-branch:
     runs-on: ubuntu-latest
-    # Do not run this job if the commit that was just pushed was the bump to a new SNAPSHOT
-    # version. Otherwise we would get into a weird version bumping loop.
-    if: "!contains(github.event.head_commit.message, 'SNAPSHOT')"
     needs:
     - test-master-branch
     steps:
