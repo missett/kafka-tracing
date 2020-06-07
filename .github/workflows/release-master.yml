@@ -47,7 +47,7 @@ jobs:
         echo "$GPG_PRIVATE_KEY" > "$HOME/gpg_private_key"
         gpg --import "$HOME/gpg_private_key"
     - name: Publish
-      run: sbt release
+      run: sbt 'release with-defaults'
     - name: Update Master Branch Version
       uses: ad-m/github-push-action@master
       with:
