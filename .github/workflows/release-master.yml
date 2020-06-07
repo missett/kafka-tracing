@@ -49,17 +49,17 @@ jobs:
         echo "$SONATYPE_CREDENTIALS" > "$HOME/.sbt/sonatype_credentials"
         echo "$GPG_PRIVATE_KEY" > "$HOME/gpg_private_key"
         gpg --import "$HOME/gpg_private_key"
-#    - name: Publish
-#      run: sbt release
-#    - name: Update Master Branch Version
-#      uses: ad-m/github-push-action@master
-#      with:
-#        github_token: ${{ secrets.GITHUB_TOKEN }}
-#        tags: true
-#        branch: master
-#    - name: Update Snapshot Branch Version
-#      uses: ad-m/github-push-action@master
-#      with:
-#        github_token: ${{ secrets.GITHUB_TOKEN }}
-#        tags: true
-#        branch: snapshot
+    - name: Publish
+      run: sbt release
+    - name: Update Master Branch Version
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        tags: true
+        branch: master
+    - name: Update Snapshot Branch Version
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        tags: true
+        branch: snapshot
