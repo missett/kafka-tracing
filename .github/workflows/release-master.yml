@@ -46,6 +46,11 @@ jobs:
         echo "$SONATYPE_CREDENTIALS" > "$HOME/.sbt/sonatype_credentials"
         echo "$GPG_PRIVATE_KEY" > "$HOME/gpg_private_key"
         gpg --import "$HOME/gpg_private_key"
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.email "ci-release@kafkatracing.github.io"
+        git config user.name "ci-release"
     - name: Publish
       run: sbt 'release with-defaults'
     - name: Update Master Branch Version
