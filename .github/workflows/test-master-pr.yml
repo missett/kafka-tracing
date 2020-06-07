@@ -1,0 +1,20 @@
+name: Test Master PR
+
+on:
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  test-master-pr:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+    - name: Set Up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Run Tests
+      run: sbt test
+

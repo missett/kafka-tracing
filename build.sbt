@@ -46,12 +46,16 @@ publishTo := {
 }
 publishMavenStyle := true
 
+// rely on CI server having a gpg install present with this key in place
 credentials += Credentials(
   "GnuPG Key ID",
   "gpg",
   "09897011459E84E59E67569CCAFCFC429E31D2A2",
   "notused"
 )
+
+// rely on CI server having this in place when publishing/releasing
+credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
