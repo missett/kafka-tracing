@@ -68,4 +68,19 @@ trait JaegerInterceptorTesting {
 
     (reporter, sampler, tracer)
   }
+
+//  def getMinRequiredUdpConfig: util.HashMap[String, String] = {
+//    val config = new util.HashMap[String, String]
+//    config.put(SERVICE_NAME, "test-service")
+//    config.put(SENDER_HOST, "localhost")
+//    config.put(SENDER_PORT, "9999")
+//    config
+//  }
+//
+//  def getMinRequiredHttpConfig: util.HashMap[String, String] = {
+//    val config = new util.HashMap[String, String]
+//    config.put(SERVICE_NAME, "test-service")
+//    config.put(SENDER_ENDPOINT, "http://localhost:9999/endpoint")
+//    config
+//  }
 }
