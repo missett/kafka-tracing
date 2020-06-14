@@ -1,5 +1,7 @@
-package io.github.missett.kafkatracing.jaeger
+package io.github.missett.kafkatracing.jaeger.interceptors
 
+import io.github.missett.kafkatracing.jaeger.InterceptorTesting
+import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.ContextHeaderEncoder
 import io.opentracing.References
 import io.opentracing.propagation.Format
 import org.scalatest.{FlatSpec, Matchers}
@@ -7,7 +9,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class JaegerProducerInterceptorTest extends FlatSpec with Matchers {
   behavior of "JaegerProducerInterceptor"
 
-  it should "report a span correctly when a message is sent" in new JaegerInterceptorTesting {
+  it should "report a span correctly when a message is sent" in new InterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerProducerInterceptor
@@ -24,12 +26,28 @@ class JaegerProducerInterceptorTest extends FlatSpec with Matchers {
 
     span.getOperationName should equal ("produce")
     span.getServiceName should equal (service)
-    span.getTags.get("partition") should equal (rec.partition())
+    span.getTags.get("partition") should equal (rec.partition().toString)
     span.getTags.get("topic") should equal (rec.topic())
     span.isFinished should equal (true)
   }
 
-  it should "continue a trace that is received in the message headers" in new JaegerInterceptorTesting {
+  it should "tag the partition as null when the producer record has a null partition" in new InterceptorTesting {
+    val (reporter, _, tracer) = getTestComponents
+
+    val int = new JaegerProducerInterceptor
+    int.tracer = tracer
+
+    val rec = pRecord(key = "one", value = 1, partition = null)
+
+    send(int, rec)
+
+    val spans = reporter.getSpans
+    spans.size() should equal (1)
+    val span = spans.get(0)
+    span.getTags.get("partition") should equal (null)
+  }
+
+  it should "continue a trace that is received in the message headers" in new InterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerProducerInterceptor
@@ -60,7 +78,7 @@ class JaegerProducerInterceptorTest extends FlatSpec with Matchers {
     newContext.getParentId should equal (parentContext.getSpanId)
   }
 
-  it should "not create a span when topic ends with -changelog" in new JaegerInterceptorTesting {
+  it should "not create a span when topic ends with -changelog" in new InterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerProducerInterceptor
@@ -74,7 +92,7 @@ class JaegerProducerInterceptorTest extends FlatSpec with Matchers {
     spans.size() should equal (0)
   }
 
-  it should "not create a span when topic ends with -repartition" in new JaegerInterceptorTesting {
+  it should "not create a span when topic ends with -repartition" in new InterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerProducerInterceptor
