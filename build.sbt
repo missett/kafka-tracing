@@ -21,6 +21,8 @@ val kafkaVersion = "2.2.0"
 libraryDependencies ++= Seq(
   "org.apache.kafka" %% "kafka" % kafkaVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
+  "org.apache.kafka" % "kafka-streams" % kafkaVersion,
+  "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion,
   "io.jaegertracing" % "jaeger-client" % "1.2.0",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe" % "config" % "1.4.0",
@@ -28,8 +30,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.8" % Test,
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
   "io.github.embeddedkafka" %% "embedded-kafka-streams" % kafkaVersion % Test,
-  "org.apache.kafka" % "kafka-streams" % kafkaVersion % Test,
-  "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion % Test,
   "org.typelevel" %% "cats-effect" % "2.1.3" % Test,
   "org.typelevel" %% "cats-core" % "2.0.0" % Test,
 )
