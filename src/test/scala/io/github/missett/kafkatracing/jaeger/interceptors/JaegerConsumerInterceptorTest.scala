@@ -1,5 +1,7 @@
-package io.github.missett.kafkatracing.jaeger
+package io.github.missett.kafkatracing.jaeger.interceptors
 
+import io.github.missett.kafkatracing.jaeger.InterceptorTesting
+import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.ContextHeaderEncoder
 import io.opentracing.References
 import io.opentracing.propagation.Format
 import org.scalatest.{FlatSpec, Matchers}
@@ -7,7 +9,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
   behavior of "JaegerConsumerInterceptor"
 
-  it should "report a span correctly when a message is consumed" in new JaegerInterceptorTesting {
+  it should "report a span correctly when a message is consumed" in new InterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerConsumerInterceptor
@@ -21,13 +23,13 @@ class JaegerConsumerInterceptorTest extends FlatSpec with Matchers {
 
     span.getServiceName should equal (service)
     span.getOperationName should equal ("consume")
-    span.getTags.get("partition") should equal (rec.partition())
-    span.getTags.get("offset") should equal (rec.offset())
+    span.getTags.get("partition") should equal (rec.partition().toString)
+    span.getTags.get("offset") should equal (rec.offset().toString)
     span.getTags.get("topic") should equal (rec.topic())
     span.isFinished should equal (true)
   }
 
-  it should "continue a trace that is received in the message headers" in new JaegerInterceptorTesting {
+  it should "continue a trace that is received in the message headers" in new InterceptorTesting {
     val (reporter, _, tracer) = getTestComponents
 
     val int = new JaegerConsumerInterceptor

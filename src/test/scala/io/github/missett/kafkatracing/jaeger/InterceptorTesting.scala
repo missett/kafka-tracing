@@ -2,6 +2,7 @@ package io.github.missett.kafkatracing.jaeger
 
 import java.util
 
+import io.github.missett.kafkatracing.jaeger.interceptors.{JaegerConsumerInterceptor, JaegerProducerInterceptor}
 import io.jaegertracing.internal.JaegerTracer
 import io.jaegertracing.internal.reporters.InMemoryReporter
 import io.jaegertracing.internal.samplers.ConstSampler
@@ -13,7 +14,7 @@ import org.apache.kafka.streams.scala.Serdes
 
 import scala.collection.JavaConverters._
 
-trait JaegerInterceptorTesting {
+trait InterceptorTesting {
   type Bytes = Array[Byte]
 
   val topic = "test-topic"
@@ -51,10 +52,10 @@ trait JaegerInterceptorTesting {
     tp
   }
 
-  def pRecord[K, V](key: K, value: V, topic: String = topic)(implicit keyser: Serde[K], valser: Serde[V]): ProducerRecord[Bytes, Bytes] = {
+  def pRecord[K, V](key: K, value: V, topic: String = topic, partition: Integer = 0)(implicit keyser: Serde[K], valser: Serde[V]): ProducerRecord[Bytes, Bytes] = {
     val k = keyser.serializer().serialize(topic, key)
     val v = valser.serializer().serialize(topic, value)
-    new ProducerRecord[Bytes, Bytes](topic, k, v)
+    new ProducerRecord[Bytes, Bytes](topic, partition, k, v)
   }
 
   def send(interceptor: JaegerProducerInterceptor, record: ProducerRecord[Bytes, Bytes]): ProducerRecord[Array[Byte], Array[Byte]] = {

@@ -1,4 +1,4 @@
-package io.github.missett.kafkatracing.jaeger
+package io.github.missett.kafkatracing.jaeger.interceptors
 
 import java.util.Properties
 import java.util.concurrent.Executors
@@ -69,7 +69,7 @@ trait TestTopology {
   }
 }
 
-class MeteredConsumerInterceptorTest extends FlatSpec with Matchers with EmbeddedKafkaStreams {
+class InterceptorIntegrationTest extends FlatSpec with Matchers with EmbeddedKafkaStreams {
   behavior of "MeteredConsumerInterceptor"
 
   it should "create a topology that links multiple spans together in a linear chain" in new TestTopology {
