@@ -29,5 +29,5 @@ object KafkaSpanOps {
     override def extractor(headers: Headers): TextMap = new ContextHeaderEncoder(headers)
   }
 
-  case class KafkaSpan(operation: String, tags: List[(String, String)], context: Headers, ref: SpanReference) extends Span[Headers]
+  case class KafkaSpanFactory(operation: String, tags: List[(String, String)], context: Headers, ref: SpanReference) extends SpanFactory[Headers]
 }
