@@ -1,10 +1,9 @@
 package io.github.missett.kafkatracing.jaeger.model
 
 import io.jaegertracing.internal.JaegerTracer
-import io.opentracing
 import io.opentracing.Tracer.SpanBuilder
 import io.opentracing.propagation.{Format, TextMap}
-import io.opentracing.{References, SpanContext, Tracer}
+import io.opentracing.{References, Span, SpanContext, Tracer}
 
 trait ContextCoderOps[A] {
   def injector(carrier: A): TextMap
@@ -25,7 +24,7 @@ sealed trait SpanReference
 case object NoReference extends SpanReference
 case object FollowsFrom extends SpanReference
 
-trait Span[C] {
+trait SpanFactory[C] {
   def operation: String
   def tags: List[(String, String)]
   def context: C
@@ -46,12 +45,15 @@ trait Span[C] {
     b
   }
 
-  def start(implicit tracer: JaegerTracer, ops: ContextCoderOps[C]): opentracing.Span = {
+  def startSpan(implicit tracer: JaegerTracer, ops: ContextCoderOps[C]): Span = {
     val span = builder.start()
     ops.inject(tracer, context, span.context())
     span
   }
 
-  def instant(implicit tracer: JaegerTracer, ops: ContextCoderOps[C]) =
-    start.finish()
+  def startAndFinishSpan(implicit tracer: JaegerTracer, ops: ContextCoderOps[C]): Span = {
+    val span = startSpan
+    span.finish()
+    span
+  }
 }

@@ -4,7 +4,7 @@ import java.util
 
 import io.github.missett.kafkatracing.jaeger.Config
 import io.github.missett.kafkatracing.jaeger.model.FollowsFrom
-import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.{KafkaSpan, _}
+import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.{KafkaSpanFactory, _}
 import io.jaegertracing.internal.JaegerTracer
 import org.apache.kafka.clients.producer.{ProducerInterceptor, ProducerRecord, RecordMetadata}
 
@@ -17,7 +17,7 @@ class JaegerProducerInterceptor extends ProducerInterceptor[Array[Byte], Array[B
 
     if (!topic.endsWith("-changelog") && !topic.endsWith("-repartition")) {
       val tags = List(("partition", partition), ("topic", topic))
-      KafkaSpan("produce", tags, record.headers(), FollowsFrom).instant
+      KafkaSpanFactory("produce", tags, record.headers(), FollowsFrom).startAndFinishSpan
     }
 
     record
