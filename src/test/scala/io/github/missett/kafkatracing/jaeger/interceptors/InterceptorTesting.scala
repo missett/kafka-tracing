@@ -1,8 +1,7 @@
-package io.github.missett.kafkatracing.jaeger
+package io.github.missett.kafkatracing.jaeger.interceptors
 
 import java.util
 
-import io.github.missett.kafkatracing.jaeger.interceptors.{JaegerConsumerInterceptor, JaegerProducerInterceptor}
 import io.jaegertracing.internal.JaegerTracer
 import io.jaegertracing.internal.reporters.InMemoryReporter
 import io.jaegertracing.internal.samplers.ConstSampler

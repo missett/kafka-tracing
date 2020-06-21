@@ -1,6 +1,5 @@
 package io.github.missett.kafkatracing.jaeger.interceptors
 
-import io.github.missett.kafkatracing.jaeger.InterceptorTesting
 import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.ContextHeaderEncoder
 import io.opentracing.References
 import io.opentracing.propagation.Format
