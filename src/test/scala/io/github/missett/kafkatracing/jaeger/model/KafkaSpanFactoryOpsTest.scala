@@ -7,7 +7,7 @@ import io.opentracing.propagation.Format
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.scalatest.{FlatSpec, Matchers}
 
-class KafkaSpanOpsTest extends FlatSpec with Matchers {
+class KafkaSpanFactoryOpsTest extends FlatSpec with Matchers {
   behavior of "ContextHeaderEncoder"
 
   it should "return null when given some empty headers" in new InterceptorTesting {
@@ -36,8 +36,8 @@ class KafkaSpanOpsTest extends FlatSpec with Matchers {
   it should "create a simple span with the correct operation name and tags, and no reference" in new InterceptorTesting {
     implicit val (reporter, _, tracer) = getTestComponents
 
-    KafkaSpan("operation", List(("foo", "bar"), ("bar", "baz")), new RecordHeaders(), NoReference)
-      .start.finish
+    KafkaSpanFactory("operation", List(("foo", "bar"), ("bar", "baz")), new RecordHeaders(), NoReference)
+      .startSpan.finish
 
     reporter.getSpans.size() should equal (1)
 
@@ -54,11 +54,11 @@ class KafkaSpanOpsTest extends FlatSpec with Matchers {
 
     val headers = new RecordHeaders()
 
-    KafkaSpan("first-operation", List(("foo", "bar"), ("bar", "baz")), headers, FollowsFrom)
-      .start.finish
+    KafkaSpanFactory("first-operation", List(("foo", "bar"), ("bar", "baz")), headers, FollowsFrom)
+      .startSpan.finish
 
-    KafkaSpan("second-operation", List(("foo", "bar"), ("bar", "baz")), headers, FollowsFrom)
-      .start.finish
+    KafkaSpanFactory("second-operation", List(("foo", "bar"), ("bar", "baz")), headers, FollowsFrom)
+      .startSpan.finish
 
     reporter.getSpans.size() should equal (2)
 
@@ -74,8 +74,8 @@ class KafkaSpanOpsTest extends FlatSpec with Matchers {
   it should "start and immediately finish a span when calling .instant on the trace" in new InterceptorTesting {
     implicit val (reporter, _, tracer) = getTestComponents
 
-    KafkaSpan("operation", List(("foo", "bar"), ("bar", "baz")), new RecordHeaders(), FollowsFrom)
-      .instant
+    KafkaSpanFactory("operation", List(("foo", "bar"), ("bar", "baz")), new RecordHeaders(), FollowsFrom)
+      .startAndFinishSpan
 
     reporter.getSpans.get(0).isFinished should equal (true)
   }

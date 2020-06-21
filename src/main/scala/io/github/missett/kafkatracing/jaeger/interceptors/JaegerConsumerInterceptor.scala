@@ -4,7 +4,7 @@ import java.util
 
 import io.github.missett.kafkatracing.jaeger.Config
 import io.github.missett.kafkatracing.jaeger.model.FollowsFrom
-import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.{KafkaSpan, _}
+import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.{KafkaSpanFactory, _}
 import io.jaegertracing.internal.JaegerTracer
 import org.apache.kafka.clients.consumer.{ConsumerInterceptor, ConsumerRecords, OffsetAndMetadata}
 import org.apache.kafka.common.TopicPartition
@@ -19,7 +19,7 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
       val record = it.next()
       val (offset, partition, topic) = (record.offset().toString, record.partition().toString, record.topic())
       val tags = List(("offset", offset), ("partition", partition), ("topic", topic))
-      KafkaSpan("consume", tags, record.headers(), FollowsFrom).instant
+      KafkaSpanFactory("consume", tags, record.headers(), FollowsFrom).startAndFinishSpan
     }
 
     records

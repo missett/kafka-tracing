@@ -5,6 +5,10 @@
 This project is an implementation of tooling to trace kafka messages flowing through distributed systems and report the
 traces to a Jaeger installation for later inspection.
 
+```
+libraryDependencies += "io.github.missett" %% "kafka-tracing" % version
+```
+
 ## Interceptors
 
 The tracing is performed in kafka consumer and producer interceptors, which means that no code changes are needed in
@@ -15,7 +19,8 @@ kafka streams/consumer/producer config object. The basic config required is show
 consumer.interceptor.classes = "io.github.missett.kafkatracing.jaeger.interceptors.JaegerConsumerInterceptor"
 producer.interceptor.classes = "io.github.missett.kafkatracing.jaeger.interceptors.JaegerProducerInterceptor"
 
-jaeger.interceptor.service.name = "test-service"
+jaeger.interceptor.service.name = "my-service"
+jaeger.interceptor.sender.type = "udp"
 jaeger.interceptor.sender.host = "localhost"
 jaeger.interceptor.sender.port = "14268"
 ```

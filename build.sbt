@@ -30,6 +30,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.8" % Test,
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
   "io.github.embeddedkafka" %% "embedded-kafka-streams" % kafkaVersion % Test,
+  "org.apache.kafka" % "kafka-streams-test-utils" % kafkaVersion % Test,
   "org.typelevel" %% "cats-effect" % "2.1.3" % Test,
   "org.typelevel" %% "cats-core" % "2.0.0" % Test,
 )
