@@ -96,6 +96,12 @@ Java Library](https://github.com/jaegertracing/jaeger-client-java/blob/master/ja
 - 'ratelimiting' - caps the rate of spans to be sent to the server at a certain rate
 - 'remote' - manage the sampler remotely
 
+## Kafka Version Compatibility
+|Kafka Version|Library Version|
+|-------------|---------------|
+|2.2.x        |0.5            |
+|2.5.x        |0.6            |
+
 ## Development
 
 For local testing of your Jaeger integration there is a Makefile provided. The following commands are available.
