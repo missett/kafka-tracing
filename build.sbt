@@ -16,7 +16,7 @@ description := "Tools for tracing distributed kafka systems with Jaeger"
 licenses := List("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 homepage := Some(url("https://github.com/missett/kafka-tracing"))
 
-val kafkaVersion = "2.2.0"
+val kafkaVersion = "2.5.0"
 
 libraryDependencies ++= Seq(
   "org.apache.kafka" %% "kafka" % kafkaVersion,
