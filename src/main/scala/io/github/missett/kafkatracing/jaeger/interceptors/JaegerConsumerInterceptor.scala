@@ -8,9 +8,12 @@ import io.github.missett.kafkatracing.jaeger.model.KafkaSpanOps.{KafkaSpanFactor
 import io.jaegertracing.internal.JaegerTracer
 import org.apache.kafka.clients.consumer.{ConsumerInterceptor, ConsumerRecords, OffsetAndMetadata}
 import org.apache.kafka.common.TopicPartition
+import org.slf4j.{Logger, LoggerFactory}
 
 class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[Byte]] {
   implicit var tracer: JaegerTracer = _
+
+  private val logger: Logger = LoggerFactory.getLogger(getClass.getName)
 
   override def onConsume(records: ConsumerRecords[Array[Byte], Array[Byte]]): ConsumerRecords[Array[Byte], Array[Byte]] = {
     val it = records.iterator()
@@ -20,6 +23,7 @@ class JaegerConsumerInterceptor extends ConsumerInterceptor[Array[Byte], Array[B
       val (offset, partition, topic) = (record.offset().toString, record.partition().toString, record.topic())
       val tags = List(("offset", offset), ("partition", partition), ("topic", topic))
       KafkaSpanFactory("consume", tags, record.headers(), FollowsFrom).startAndFinishSpan
+      logger.info(s"Reported span for topic $topic on partition $partition")
     }
 
     records
