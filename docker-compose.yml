@@ -1,0 +1,87 @@
+version: '2'
+
+services:
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.9.2
+    volumes:
+    - ./apm-server-config.yml:/usr/share/apm-server/apm-server.yml
+    command:
+    - --strict.perms=false
+    - -e
+    - -E 
+    - output.elasticsearch.hosts=["elasticsearch:9200"]
+
+  jaeger-ui:
+    image: jaegertracing/jaeger-query:1.19
+    environment:
+    - SPAN_STORAGE_TYPE=elasticsearch
+    - ES_SERVER_URLS=http://elasticsearch:9200
+    ports:
+    - 16686:16686
+    restart: always
+
+  jaeger-ingester:
+    image: jaegertracing/jaeger-ingester:1.19
+    environment:
+    - SPAN_STORAGE_TYPE=elasticsearch
+    command:
+    - --log-level=debug
+    - --kafka.consumer.brokers=kafka-platform:9092
+    - --kafka.consumer.client-id=jaeger-ingester
+    - --kafka.consumer.encoding=json
+    - --kafka.consumer.group-id=jaeger-ingester
+    - --kafka.consumer.topic=opentracing-span-ingestion
+    - --es.server-urls=http://elasticsearch:9200
+    restart: always
+
+  jaeger-collector:
+    image: jaegertracing/jaeger-collector:1.19
+    environment:
+    - SPAN_STORAGE_TYPE=kafka
+    command:
+    - --log-level=debug
+    - --kafka.producer.brokers=kafka-platform:9092
+    - --kafka.producer.encoding=json
+    - --kafka.producer.topic=opentracing-span-ingestion
+    restart: always
+
+  jaeger-agent:
+    image: jaegertracing/jaeger-agent:1.19
+    ports:
+    - 6831:6831/udp
+    command: 
+    - --reporter.grpc.host-port=jaeger-collector:14250
+    - --log-level=debug
+    restart: always
+
+  kibana:
+    image: kibana:7.9.2
+    environment:
+    - xpack.graph.use_significance=false
+    - xpack.graph.min_doc_count=1
+    ports:
+    - 5601:5601
+
+  elasticsearch:
+    image: elasticsearch:7.9.2
+    environment: 
+    - discovery.type=single-node
+    ports:
+    - 9200:9200
+    - 9300:9300
+
+  kafka-platform:
+    image: landoop/fast-data-dev:2.3.0
+    environment:
+      ADV_HOST: "kafka-platform"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-platform:9092"
+      RUNNING_SAMPLEDATA: "0"
+      REST_PORT: "0"
+      CONNECT_PORT: "0"
+      SAMPLEDATA: "0"
+      FORWARDLOGS: "0"
+      SAMPLEDATA: "0"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+    - 9092:9092
+
