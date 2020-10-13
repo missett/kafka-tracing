@@ -19,13 +19,6 @@ homepage := Some(url("https://github.com/missett/kafka-tracing"))
 val kafkaVersion = "2.2.0"
 
 libraryDependencies ++= Seq(
-  "io.jaegertracing" % "jaeger-proto" % "0.4.0",
-  "io.jaegertracing" % "jaeger-tracedsl" % "0.4.0",
-  "io.jaegertracing" % "jaeger-client" % "1.2.0",
-//  "io.netty" % "netty-tcnative" % "2.0.34.Final",
-//  "io.netty" % "netty-tcnative-boringssl-static" % "2.0.34.Final",
-//  "io.grpc" % "grpc-bom" % "1.28.0",
-
   "org.apache.kafka" %% "kafka" % kafkaVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
