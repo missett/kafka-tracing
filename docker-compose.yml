@@ -8,7 +8,7 @@ services:
     command:
     - --strict.perms=false
     - -e
-    - -E 
+    - -E
     - output.elasticsearch.hosts=["elasticsearch:9200"]
 
   jaeger-ui:
@@ -49,7 +49,7 @@ services:
     image: jaegertracing/jaeger-agent:1.19
     ports:
     - 6831:6831/udp
-    command: 
+    command:
     - --reporter.grpc.host-port=jaeger-collector:14250
     - --log-level=debug
     restart: always
@@ -64,7 +64,7 @@ services:
 
   elasticsearch:
     image: elasticsearch:7.9.2
-    environment: 
+    environment:
     - discovery.type=single-node
     ports:
     - 9200:9200
@@ -78,7 +78,6 @@ services:
       RUNNING_SAMPLEDATA: "0"
       REST_PORT: "0"
       CONNECT_PORT: "0"
-      SAMPLEDATA: "0"
       FORWARDLOGS: "0"
       SAMPLEDATA: "0"
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"

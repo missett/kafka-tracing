@@ -16,13 +16,23 @@ description := "Tools for tracing distributed kafka systems with Jaeger"
 licenses := List("Apache 2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 homepage := Some(url("https://github.com/missett/kafka-tracing"))
 
-val kafkaVersion = "2.2.0"
+val kafkaVersion = "2.5.0"
+val circeVersion = "0.12.3"
 
 libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-literal" % circeVersion,
+
+  "com.github.pureconfig" %% "pureconfig" % "0.12.1",
+  "org.typelevel" %% "cats-effect" % "2.1.3",
+  "org.typelevel" %% "cats-core" % "2.0.0",
+
   "org.apache.kafka" %% "kafka" % kafkaVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "org.apache.kafka" % "kafka-streams" % kafkaVersion,
-  "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion,
   "io.jaegertracing" % "jaeger-client" % "1.2.0",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe" % "config" % "1.4.0",
@@ -31,9 +41,7 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
   "io.github.embeddedkafka" %% "embedded-kafka-streams" % kafkaVersion % Test,
   "org.apache.kafka" % "kafka-streams-test-utils" % kafkaVersion % Test,
-  "com.madewithtea" %% "mockedstreams" % "3.3.0" % Test,
-  "org.typelevel" %% "cats-effect" % "2.1.3" % Test,
-  "org.typelevel" %% "cats-core" % "2.0.0" % Test,
+  "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion % Test,
 )
   .map(_ exclude("javax.ws.rs", "javax.ws.rs-api"))
   .map(_ exclude("org.slf4j", "slf4j-log4j12"))
