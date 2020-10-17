@@ -1,10 +1,11 @@
 package io.github.missett.kafkatracing.jaeger.analytics.model
 
-sealed trait RefType
-case object FOLLOWS_FROM extends RefType
-case object CHILD_OF extends RefType
+object RefType extends Enumeration {
+  type Type = Value
+  val FOLLOWS_FROM, CHILD_OF: Type = Value
+}
 
-case class Tag(key: String, vStr: String)
+case class Tag(key: String, vStr: Option[String])
 
 case class Process(
   serviceName: String,
@@ -14,17 +15,17 @@ case class Process(
 case class Reference(
   traceId: String,
   spanId: String,
-  refType: Option[List[RefType]],
-  flags: Int,
-  startTime: Long, // parsed from ISO timestamp
-  duration: Long, // parse from a decimal float in seconds
-  tags: List[Tag],
-  process: Process
+  refType: RefType.Type,
 )
 
 case class Span(
   traceId: String,
   spanId: String,
   operationName: String,
-  references: Option[List[Map[String, String]]]
+  references: Option[List[Reference]],
+  flags: Int,
+  startTime: String,
+  duration: String,
+  tags: List[Tag],
+  process: Process
 )
