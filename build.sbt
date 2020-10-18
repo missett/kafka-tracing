@@ -30,6 +30,8 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-effect" % "2.1.3",
   "org.typelevel" %% "cats-core" % "2.0.0",
 
+  "org.apache.tinkerpop" % "tinkergraph-gremlin" % "3.4.8",
+
   "org.apache.kafka" %% "kafka" % kafkaVersion,
   "org.apache.kafka" % "kafka-clients" % kafkaVersion,
   "org.apache.kafka" % "kafka-streams" % kafkaVersion,

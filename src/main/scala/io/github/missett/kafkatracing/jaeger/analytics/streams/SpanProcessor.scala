@@ -2,33 +2,29 @@ package io.github.missett.kafkatracing.jaeger.analytics.streams
 
 import io.github.missett.kafkatracing.jaeger.analytics.LazyLogging
 import io.github.missett.kafkatracing.jaeger.analytics.model.DataAccess.StoreAccess
-import io.github.missett.kafkatracing.jaeger.analytics.model.Span
+import io.github.missett.kafkatracing.jaeger.analytics.model.{Reference, Span}
 import io.github.missett.kafkatracing.jaeger.analytics.serialization.KafkaStoreAccess
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
 import org.apache.kafka.streams.state.KeyValueStore
 
-class SpanLogic(roots: StoreAccess[String, Span], spans: StoreAccess[String, Span]) {
-  private def root(span: Span): Span = {
-    roots.set(span.traceId, span)
-    spans.set(span.spanId, span)
+class SpanLogic(store: StoreAccess[String, Span]) {
+  private def traverse(span: Span): List[Span] = {
+    val refs = span.references.getOrElse(List.empty[Reference])
+    val spans = refs.map(_.spanId).flatMap(store.get)
+    span :: spans.flatMap(traverse)
   }
 
-  private def nonroot(span: Span): Span = {
-    spans.set(span.spanId, span)
-  }
-
-  def process(span: Span): Span = span.references match {
-    case Some(_) => nonroot(span)
-    case None    => root(span)
+  def process(span: Span): List[Span] = {
+    store.set(span.spanId, span)
+    traverse(span)
   }
 }
 
 class SpanProcessor extends Processor[String, Span] with LazyLogging {
   var context: ProcessorContext = _
 
-  val rootstore = new KafkaStoreAccess[String, Span](this.context.getStateStore(TopologyLabels.TraceRootSpanStoreName).asInstanceOf[KeyValueStore[String, Span]])
   val spanstore = new KafkaStoreAccess[String, Span](this.context.getStateStore(TopologyLabels.SpanStoreName).asInstanceOf[KeyValueStore[String, Span]])
-  val logic = new SpanLogic(rootstore, spanstore)
+  val logic = new SpanLogic(spanstore)
 
   override def init(context: ProcessorContext): Unit = { this.context = context; () }
 

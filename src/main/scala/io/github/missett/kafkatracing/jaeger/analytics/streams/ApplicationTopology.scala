@@ -15,7 +15,6 @@ object TopologyLabels {
   val SpanSourceName = "span-source"
   val SpanProcessorName = "span-processor"
   val SpanStoreName = "span-store"
-  val TraceRootSpanStoreName = "trace-root-span-store"
 }
 
 object ApplicationTopology {
@@ -37,12 +36,6 @@ object ApplicationTopology {
 
     topology.addStateStore(
       new KeyValueStoreBuilder(Stores.inMemoryKeyValueStore(TopologyLabels.SpanStoreName), serdes.StringSerde, serdes.SpanSerde, new SystemTime)
-        .withLoggingEnabled(Map("retention.ms" -> s"${retention.toMillis}", "cleanup.policy" -> "compact,delete").asJava),
-      TopologyLabels.SpanProcessorName
-    )
-
-    topology.addStateStore(
-      new KeyValueStoreBuilder(Stores.inMemoryKeyValueStore(TopologyLabels.TraceRootSpanStoreName), serdes.StringSerde, serdes.SpanSerde, new SystemTime)
         .withLoggingEnabled(Map("retention.ms" -> s"${retention.toMillis}", "cleanup.policy" -> "compact,delete").asJava),
       TopologyLabels.SpanProcessorName
     )

@@ -13,26 +13,69 @@ class TestSpanStore extends StoreAccess[String, Span] {
   override def set(key: String, value: Span): Span = { store.put(key, value); value }
 }
 
+class InfiniteRange extends Iterator[Int] {
+  var i: Int = -1
+  override def hasNext: Boolean = true
+  override def next(): Int = { i += 1; i }
+}
+
 class SpanProcessorTest extends FlatSpec with Matchers with OptionValues with Config {
   behavior of "SpanLogic"
 
-  it should "insert a span with no references in the trace root store and in the span store" in {
-    val span = Span("traceid", "spanid", "operation", None, 1, "datetime", "duration", List.empty, Process("service", List.empty))
-    val roots = new TestSpanStore
+  val range = new InfiniteRange
+
+  def getSpan(index: Int, parents: List[Span] = List.empty) = {
+    val traceid = "traceid"
+    val spanid = s"span-$index"
+    val operation = "operation"
+
+    Span(traceid, spanid, operation, Some(parents.map(s => Reference(s.traceId, s.spanId, RefType.FOLLOWS_FROM))), 1, s"$index", s"$index", List.empty, Process("service-name", List.empty))
+  }
+
+  it should "insert a span in the span store" in {
+    val span = getSpan(0)
     val spans = new TestSpanStore
-    val logic = new SpanLogic(roots, spans)
+    val logic = new SpanLogic(spans)
     logic.process(span)
-    roots.store.get(span.traceId).value should equal (span)
     spans.store.get(span.spanId).value should equal (span)
   }
 
-  it should "not insert a span with references in the trace root store, but insert it in the span store" in {
-    val span = Span("traceid", "spanid", "operation", Some(List.empty), 1, "datetime", "duration", List.empty, Process("service", List.empty))
-    val roots = new TestSpanStore
+  it should "return the span and a parent span when processing" in {
     val spans = new TestSpanStore
-    val logic = new SpanLogic(roots, spans)
-    logic.process(span)
-    roots.store.get(span.traceId) should equal (None)
-    spans.store.get(span.spanId).value should equal (span)
+    val logic = new SpanLogic(spans)
+
+    val parent = getSpan(0)
+    val child = getSpan(1, List(parent))
+
+    logic.process(parent) should equal (List(parent))
+    logic.process(child) should equal (List(child, parent))
+  }
+
+  it should "return a chained sequence of spans" in {
+    val spans = new TestSpanStore
+    val logic = new SpanLogic(spans)
+    val a = getSpan(0)
+    val b = getSpan(1, List(a))
+    val c = getSpan(2, List(b))
+
+    val result = List(a, b, c).foldLeft(List.empty[Span])((_, curr) => {
+      logic.process(curr)
+    })
+
+    result.size should equal (3)
+  }
+
+  it should "return a set of spans with branching relationships" in {
+    val spans = new TestSpanStore
+    val logic = new SpanLogic(spans)
+    val a = getSpan(0)
+    val b = getSpan(1)
+    val c = getSpan(2, List(a, b))
+
+    val result = List(a, b, c).foldLeft(List.empty[Span])((_, curr) => {
+      logic.process(curr)
+    })
+
+    result.size should equal (3)
   }
 }
