@@ -6,17 +6,36 @@ import io.github.missett.kafkatracing.jaeger.analytics.model.{Reference, Span}
 import io.github.missett.kafkatracing.jaeger.analytics.serialization.KafkaStoreAccess
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
 import org.apache.kafka.streams.state.KeyValueStore
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
+import org.apache.tinkerpop.gremlin.structure.Vertex
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph
 
 class SpanLogic(store: StoreAccess[String, Span]) {
-  private def traverse(span: Span): List[Span] = {
+  private def vertex(span: Span, g: GraphTraversalSource) =
+    g.addV("span")
+      .property("span-id", span.spanId)
+      .property("operation", span.operationName)
+      .property("duration", span.duration)
+      .property("start-time", span.startTime)
+      .next()
+
+  private def traverse(span: Span, v: Vertex, g: GraphTraversalSource): List[Span] = {
     val refs = span.references.getOrElse(List.empty[Reference])
     val spans = refs.map(_.spanId).flatMap(store.get)
-    span :: spans.flatMap(traverse)
+
+    span :: spans.flatMap(s => {
+      val x = vertex(s, g)
+      g.addE("follows-from").from(v).to(x).iterate()
+      traverse(s, x ,g)
+    })
   }
 
-  def process(span: Span): List[Span] = {
+  def process(span: Span): (List[Span], GraphTraversalSource) = {
     store.set(span.spanId, span)
-    traverse(span)
+    val graph = TinkerGraph.open()
+    val g = graph.traversal()
+    val spans = traverse(span, vertex(span, g), g)
+    (spans, g)
   }
 }
 
