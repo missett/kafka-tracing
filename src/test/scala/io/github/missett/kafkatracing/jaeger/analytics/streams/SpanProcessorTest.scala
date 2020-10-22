@@ -17,19 +17,12 @@ class TestSpanStore extends StoreAccess[String, Span] {
   override def set(key: String, value: Span): Span = { store.put(key, value); value }
 }
 
-class InfiniteRange extends Iterator[Int] {
-  var i: Int = -1
-  override def hasNext: Boolean = true
-  override def next(): Int = { i += 1; i }
-}
-
 class SpanProcessorTest extends FlatSpec with Matchers with OptionValues with Config {
   behavior of "SpanLogic"
 
-  val range = new InfiniteRange
   val now = System.currentTimeMillis()
 
-  def getSpan(index: Int, parents: List[Span] = List.empty) = {
+  def span(index: Int, parents: List[Span] = List.empty) = {
     val traceid = "traceid"
     val spanid = s"span-$index"
     val operation = "operation"
@@ -42,45 +35,33 @@ class SpanProcessorTest extends FlatSpec with Matchers with OptionValues with Co
   }
 
   it should "insert a span in the span store" in {
-    val span = getSpan(0)
-    val spans = new TestSpanStore
-    val logic = new SpanLogic(spans)
-    logic.process(span)
-    spans.store.get(span.spanId).value should equal (span)
-  }
-
-  it should "return the span and a parent span when processing" in {
-    val spans = new TestSpanStore
-    val logic = new SpanLogic(spans)
-
-    val parent = getSpan(0)
-    val child = getSpan(1, List(parent))
-
-    logic.process(parent) should equal (List(parent))
-    logic.process(child) should equal (List(child, parent))
+    val a = span(0)
+    val store = new TestSpanStore
+    val logic = new SpanLogic(store)
+    logic.process(a)
+    store.get(a.spanId).value should equal (a)
   }
 
   it should "return a chained sequence of spans as a graph" in {
     val store = new TestSpanStore
     val logic = new SpanLogic(store)
-    val a = getSpan(0)
-    val b = getSpan(1, List(a))
-    val c = getSpan(2, List(b))
+    val a = span(0)
+    val b = span(1, List(a))
+    val c = span(2, List(b))
 
     val results = List(a, b, c).map(curr => {
       logic.process(curr)
     })
 
-    val (spans, g) = results.last
-    spans.size should equal (3)
+    val g = results.last
 
     val search = g.V()
       .has("span", "span-id", c.spanId)
       .as("c")
-      .out("follows-from")
+      .out("FOLLOWS_FROM")
       .has("span", "span-id", b.spanId)
       .as("b")
-      .out("follows-from")
+      .out("FOLLOWS_FROM")
       .has("span", "span-id", a.spanId)
       .as("a")
       .select("c", "b", "a")
@@ -98,22 +79,21 @@ class SpanProcessorTest extends FlatSpec with Matchers with OptionValues with Co
   it should "return a set of spans with branching relationships as a graph" in {
     val store = new TestSpanStore
     val logic = new SpanLogic(store)
-    val a = getSpan(0)
-    val b = getSpan(1)
-    val c = getSpan(2, List(a, b))
+    val a = span(0)
+    val b = span(1)
+    val c = span(2, List(a, b))
 
     val results = List(a, b, c).map(curr => {
       logic.process(curr)
     })
 
-    val (spans, g) = results.last
-    spans.size should equal (3)
+    val g = results.last
 
     {
       val search = g.V()
         .has("span", "span-id", c.spanId)
         .as("c")
-        .out("follows-from")
+        .out("FOLLOWS_FROM")
         .has("span", "span-id", b.spanId)
         .as("b")
         .select("c", "b")
@@ -130,7 +110,7 @@ class SpanProcessorTest extends FlatSpec with Matchers with OptionValues with Co
       val search = g.V()
         .has("span", "span-id", c.spanId)
         .as("c")
-        .out("follows-from")
+        .out("FOLLOWS_FROM")
         .has("span", "span-id", a.spanId)
         .as("a")
         .select("c", "a")

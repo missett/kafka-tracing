@@ -2,6 +2,7 @@ package io.github.missett.kafkatracing.jaeger.analytics.streams
 
 import io.github.missett.kafkatracing.jaeger.analytics.LazyLogging
 import io.github.missett.kafkatracing.jaeger.analytics.model.DataAccess.StoreAccess
+import io.github.missett.kafkatracing.jaeger.analytics.model.RefType.Type
 import io.github.missett.kafkatracing.jaeger.analytics.model.{Reference, Span}
 import io.github.missett.kafkatracing.jaeger.analytics.serialization.KafkaStoreAccess
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
@@ -19,23 +20,29 @@ class SpanLogic(store: StoreAccess[String, Span]) {
       .property("start-time", span.startTime)
       .next()
 
-  private def traverse(span: Span, v: Vertex, g: GraphTraversalSource): List[Span] = {
+  private def traverse(span: Span, g: GraphTraversalSource): Vertex = {
     val refs = span.references.getOrElse(List.empty[Reference])
-    val spans = refs.map(_.spanId).flatMap(store.get)
 
-    span :: spans.flatMap(s => {
-      val x = vertex(s, g)
-      g.addE("follows-from").from(v).to(x).iterate()
-      traverse(s, x ,g)
+    val relations: List[(Type, Span)] = refs.map(r => (r.refType, r.spanId)).flatMap(r => store.get(r._2) match {
+      case Some(span) => Some((r._1, span))
+      case None       => None
     })
+
+    val v = vertex(span, g)
+
+    relations.foreach {
+      case (ref, span) => g.addE(ref.toString).from(v).to(traverse(span, g)).iterate()
+    }
+
+    v
   }
 
-  def process(span: Span): (List[Span], GraphTraversalSource) = {
+  def process(span: Span): GraphTraversalSource = {
     store.set(span.spanId, span)
     val graph = TinkerGraph.open()
     val g = graph.traversal()
-    val spans = traverse(span, vertex(span, g), g)
-    (spans, g)
+    traverse(span, g)
+    g
   }
 }
 

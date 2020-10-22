@@ -1,15 +1,6 @@
 version: '2'
 
 services:
-  apm-server:
-    image: docker.elastic.co/apm/apm-server:7.9.2
-    volumes:
-    - ./apm-server-config.yml:/usr/share/apm-server/apm-server.yml
-    command:
-    - --strict.perms=false
-    - -e
-    - -E
-    - output.elasticsearch.hosts=["elasticsearch:9200"]
 
   jaeger-ui:
     image: jaegertracing/jaeger-query:1.19
