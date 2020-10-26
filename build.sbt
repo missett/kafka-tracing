@@ -40,6 +40,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.0",
 
   "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+  "org.mockito" % "mockito-core" % "3.1.0" % Test,
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
   "io.github.embeddedkafka" %% "embedded-kafka-streams" % kafkaVersion % Test,
   "org.apache.kafka" % "kafka-streams-test-utils" % kafkaVersion % Test,
