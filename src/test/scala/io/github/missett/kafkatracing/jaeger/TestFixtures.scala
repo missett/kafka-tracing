@@ -4,8 +4,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import io.github.missett.kafkatracing.jaeger.analytics.model.DataAccess.StoreAccess
-import io.github.missett.kafkatracing.jaeger.analytics.model.TraceGraph.TraceGraphAlgebra
+import io.github.missett.kafkatracing.jaeger.analytics.model.TraceGraph.{TraceGraphAlgebra, Traversal}
 import io.github.missett.kafkatracing.jaeger.analytics.model.{Process, RefType, Reference, Span}
+import org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource
 
 import scala.collection.mutable
@@ -30,8 +31,10 @@ object TestFixtures {
     override def set(key: String, value: Span): Span = { store.put(key, value); value }
   }
 
-  class TestTraceGraphAlgebra(graph: GraphTraversalSource) extends TraceGraphAlgebra {
-    override def create(store: StoreAccess[String, Span], span: Span): GraphTraversalSource = graph
+  class TestTraceGraphAlgebra(g: GraphTraversalSource, t: Either[Throwable, Traversal]) extends TraceGraphAlgebra {
+    override def create(store: StoreAccess[String, Span], span: Span): GraphTraversalSource = g
+
+    override def execute(engine: GremlinGroovyScriptEngine, g: GraphTraversalSource, traversal: String): Either[Throwable, Traversal] = t
   }
 }
 

@@ -13,7 +13,7 @@ class KafkaStoreAccess[K, V](store: => KeyValueStore[K, V]) extends StoreAccess[
   }
 
   override def get(key: K): Option[V] = Try(store.get(key)) match {
-    case Success(value) => Some(value)
+    case Success(value) => Option(value)
     case Failure(exception) => none(s"failed to decode entry at key [$key]", exception)
   }
 
