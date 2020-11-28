@@ -29,28 +29,6 @@ This configures the interceptors to use UDP reporters (an HTTP alternative is av
 available to accept reports on localhost:14268 via UDP. The traces will be displayed in the Jaeger UI as belonging to
 service 'test-service'.
 
-## Tracing Transformers and Streams DSL
-
-Transformer classes are provided that can be plugged into your application topology which allow you to time specific 
-operations within your application, not just the consume and produce operations allowed by the interceptors. The 
-`StartTraceTransform` class (and associated getter class) should be used to start a trace. Once your messages have 
-passed through the nodes in your application that you wish to profile, the `EndTraceTransform` class should be used to
-end the traces (if this is not included at some point in the topology your traces will never be sent).
-
-An implicit extension to the streams DSL is also provided to simplify this. Import `TracingStreamsExtension._` and the 
-`.trace` method will be available. It takes an operation name and a function providing a series of streams operations
-to trace. 
-
-```
-import TracingStreamsExtension._
-
-implicit val tracer: JaegerTracer = Config.fromConf(...) // this takes all the same config props as the interceptors
-
-builder.input[String, Int]("input-topic").trace("add-one", stream => stream.mapValues(_ + 1)).to("output-topic")
-```
-
-The above example would trace the given operation and label the operation in Jaeger as "add-one".
-
 ## Config
 
 The following config options are available, shown here with their defaults and other options where applicable.
