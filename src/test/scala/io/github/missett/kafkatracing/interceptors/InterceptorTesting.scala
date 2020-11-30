@@ -1,12 +1,13 @@
-package io.github.missett.kafkatracing.jaeger.interceptors
+package io.github.missett.kafkatracing.interceptors
 
 import java.util
 
-import io.jaegertracing.internal.JaegerTracer
-import io.jaegertracing.internal.reporters.InMemoryReporter
-import io.jaegertracing.internal.samplers.ConstSampler
-import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, OffsetAndMetadata}
-import org.apache.kafka.clients.producer.ProducerRecord
+import com.typesafe.config.ConfigFactory
+import io.opentelemetry.exporters.inmemory.InMemorySpanExporter
+import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.trace.`export`.SimpleSpanProcessor
+import org.apache.kafka.clients.consumer.{ConsumerInterceptor, ConsumerRecord, ConsumerRecords, OffsetAndMetadata}
+import org.apache.kafka.clients.producer.{ProducerInterceptor, ProducerRecord}
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.streams.scala.Serdes
@@ -17,19 +18,24 @@ trait InterceptorTesting {
   type Bytes = Array[Byte]
 
   val topic = "test-topic"
-
   val service = "test-service"
 
   implicit val IntSerde: Serde[Int] = Serdes.Integer
   implicit val StringSerde: Serde[String] = Serdes.String
 
-  def cRecord[K, V](key: K, value: V, partition: Int = 0, offset: Long = 0, topic: String = topic)(implicit keyser: Serde[K], valser: Serde[V]): ConsumerRecord[Bytes, Bytes] = {
+  val streamsconf = ConfigFactory.load().getConfig("streams").entrySet()
+  val confmap = streamsconf.asScala.map(kv => { kv.getKey -> kv.getValue.render() }).toMap.asJava
+
+  val exporter = InMemorySpanExporter.create()
+  OpenTelemetrySdk.getGlobalTracerManagement.addSpanProcessor(SimpleSpanProcessor.builder(exporter).build())
+
+  def consumable[K, V](key: K, value: V, partition: Int = 0, offset: Long = 0, topic: String = topic)(implicit keyser: Serde[K], valser: Serde[V]): ConsumerRecord[Bytes, Bytes] = {
     val k = keyser.serializer().serialize(topic, key)
     val v = valser.serializer().serialize(topic, value)
     new ConsumerRecord[Bytes, Bytes](topic, partition, offset, k, v)
   }
 
-  def consume[K, V](record: ConsumerRecord[Bytes, Bytes], interceptor: JaegerConsumerInterceptor): ConsumerRecord[Bytes, Bytes] = {
+  def consume[K, V](record: ConsumerRecord[Bytes, Bytes], interceptor: ConsumerInterceptor[Bytes, Bytes]): ConsumerRecord[Bytes, Bytes] = {
     val topicpartition = new TopicPartition(record.topic(), record.partition())
     val records = new util.HashMap[TopicPartition, util.List[ConsumerRecord[Bytes, Bytes]]]()
     records.put(topicpartition, List[ConsumerRecord[Bytes, Bytes]](record).asJava)
@@ -39,7 +45,7 @@ trait InterceptorTesting {
     record
   }
 
-  def commit(record: ConsumerRecord[Bytes, Bytes], interceptor: JaegerConsumerInterceptor): TopicPartition = {
+  def commit(record: ConsumerRecord[Bytes, Bytes], interceptor: ConsumerInterceptor[Bytes, Bytes]): TopicPartition = {
     val offsets = new util.HashMap[TopicPartition, OffsetAndMetadata]()
     val tp = new TopicPartition(record.topic(), record.partition())
     // The client receives a message at offset N and then when the client commits its offset
@@ -51,21 +57,13 @@ trait InterceptorTesting {
     tp
   }
 
-  def pRecord[K, V](key: K, value: V, topic: String = topic, partition: Integer = 0)(implicit keyser: Serde[K], valser: Serde[V]): ProducerRecord[Bytes, Bytes] = {
+  def producable[K, V](key: K, value: V, topic: String = topic, partition: Integer = 0)(implicit keyser: Serde[K], valser: Serde[V]): ProducerRecord[Bytes, Bytes] = {
     val k = keyser.serializer().serialize(topic, key)
     val v = valser.serializer().serialize(topic, value)
     new ProducerRecord[Bytes, Bytes](topic, partition, k, v)
   }
 
-  def send(interceptor: JaegerProducerInterceptor, record: ProducerRecord[Bytes, Bytes]): ProducerRecord[Array[Byte], Array[Byte]] = {
+  def produce(record: ProducerRecord[Bytes, Bytes], interceptor: ProducerInterceptor[Bytes, Bytes]): ProducerRecord[Array[Byte], Array[Byte]] = {
     interceptor.onSend(record)
-  }
-
-  def getTestComponents: (InMemoryReporter, ConstSampler, JaegerTracer) = {
-    val reporter = new InMemoryReporter
-    val sampler = new ConstSampler(true)
-    val tracer = new JaegerTracer.Builder(service).withReporter(reporter).withSampler(sampler).build()
-
-    (reporter, sampler, tracer)
   }
 }

@@ -1,4 +1,4 @@
-package io.github.missett.kafkatracing.jaeger.interceptors
+package io.github.missett.kafkatracing.interceptors
 
 import java.util.Properties
 import java.util.concurrent.Executors
@@ -6,19 +6,23 @@ import java.util.concurrent.Executors
 import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.typesafe.config.ConfigFactory
-import io.github.missett.kafkatracing.jaeger.Config.ConfigProps
+import io.opentelemetry.exporters.inmemory.InMemorySpanExporter
+import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.trace.`export`.SimpleSpanProcessor
+import org.apache.kafka.streams.KafkaStreams
+import org.apache.kafka.streams.scala.Serdes
+import org.apache.kafka.streams.scala.kstream.{Consumed, Grouped, Materialized, Produced}
+import org.apache.kafka.streams.state.Stores
+//import io.github.missett.kafkatracing.jaeger.Config.ConfigProps
 import net.manub.embeddedkafka.EmbeddedKafkaConfig
 import net.manub.embeddedkafka.streams.EmbeddedKafkaStreams
-import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.scala.kstream.{Consumed, Grouped, Materialized, Produced}
-import org.apache.kafka.streams.scala.{Serdes, StreamsBuilder}
-import org.apache.kafka.streams.state.Stores
+import org.apache.kafka.streams.scala.StreamsBuilder
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.Random
+import scala.collection.JavaConverters._
 
 trait TestTopology {
   implicit val StringSerde = Serdes.String
@@ -31,6 +35,10 @@ trait TestTopology {
   implicit val Prod = Produced.`with`[String, Int]
   implicit val Group = Grouped.`with`[String, Int]
   implicit val Mat = Materialized.as[String, Int](Stores.inMemoryKeyValueStore("store"))
+
+  val exporter = InMemorySpanExporter.create()
+
+  OpenTelemetrySdk.getGlobalTracerManagement.addSpanProcessor(SimpleSpanProcessor.builder(exporter).build())
 
   def getLinearTopologyBuilder(input: String, output: String): StreamsBuilder = {
     val builder = new StreamsBuilder()
@@ -53,9 +61,10 @@ trait TestTopology {
         val props = new Properties()
 
         ConfigFactory.load().getConfig("streams").entrySet().iterator().asScala
-          .foreach(entry => { props.put(entry.getKey, entry.getValue.unwrapped()) })
+          .foreach(entry => {
+            props.put(entry.getKey, entry.getValue.unwrapped())
+          })
         props.put("application.id", appid)
-        props.put(ConfigProps.SERVICE_NAME, appid)
 
         val streams = new KafkaStreams(builder.build(), props)
 
@@ -64,7 +73,9 @@ trait TestTopology {
         streams
       }
     })({
-      s => IO { s.close() }
+      s => IO {
+        s.close()
+      }
     })
   }
 }
@@ -97,6 +108,13 @@ class InterceptorIntegrationTest extends FlatSpec with Matchers with EmbeddedKaf
       }) }}
 
       threads.parSequence.unsafeRunSync()
+
+      exporter.getFinishedSpanItems.asScala.toList.sliding(2, 1).toList.foreach {
+        case (first :: second :: Nil) =>
+          second.getParentSpanId should equal (first.getSpanId)
+        case _ =>
+          throw new Exception("should not happen")
+      }
     }
   }
 

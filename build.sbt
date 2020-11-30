@@ -19,19 +19,19 @@ homepage := Some(url("https://github.com/missett/kafka-tracing"))
 val kafkaVersion = "2.5.0"
 
 libraryDependencies ++= Seq(
-  "org.apache.kafka" %% "kafka" % kafkaVersion,
-  "org.apache.kafka" % "kafka-clients" % kafkaVersion,
-  "org.apache.kafka" % "kafka-streams" % kafkaVersion,
-  "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion,
-  "io.jaegertracing" % "jaeger-client" % "1.2.0",
-  "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "com.typesafe" % "config" % "1.4.0",
+  "org.apache.kafka" %% "kafka" % kafkaVersion % Provided,
+  "org.apache.kafka" % "kafka-clients" % kafkaVersion % Provided,
+  "io.opentelemetry" % "opentelemetry-sdk" % "0.11.0",
+  "io.opentelemetry" % "opentelemetry-contrib-trace-propagators" % "0.5.0",
+  "ch.qos.logback" % "logback-classic" % "1.2.3" % Provided,
 
   "org.scalatest" %% "scalatest" % "3.0.8" % Test,
   "org.scalacheck" %% "scalacheck" % "1.14.1" % Test,
+  "io.opentelemetry" % "opentelemetry-exporters-inmemory" % "0.9.1" % Test,
+  "org.apache.kafka" % "kafka-streams" % kafkaVersion % Test,
+  "org.apache.kafka" %% "kafka-streams-scala" % kafkaVersion % Test,
   "io.github.embeddedkafka" %% "embedded-kafka-streams" % kafkaVersion % Test,
-  "org.apache.kafka" % "kafka-streams-test-utils" % kafkaVersion % Test,
-  "com.madewithtea" %% "mockedstreams" % "3.3.0" % Test,
+  "com.typesafe" % "config" % "1.4.0" % Test,
   "org.typelevel" %% "cats-effect" % "2.1.3" % Test,
   "org.typelevel" %% "cats-core" % "2.0.0" % Test,
 )
